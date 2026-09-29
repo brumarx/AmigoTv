@@ -290,7 +290,7 @@ public class MainActivity extends Activity {
             SharedPreferences p = Apps.prefs(MainActivity.this);
             ((ImageView) cell.getChildAt(0)).setImageDrawable(ri.loadIcon(pm));
             String text = Apps.label(ri, pm);
-            if (pkg.equals(p.getString(Apps.AUTOSTART, null))) text = "⏻ " + text;
+            if (pkg.equals(p.getString(Apps.AUTOSTART, null))) text = "★ " + text;
             ((TextView) cell.getChildAt(1)).setText(text);
             return cell;
         }
