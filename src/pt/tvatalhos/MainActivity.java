@@ -35,6 +35,9 @@ import java.util.List;
 /** Lista todas as apps (incluindo as só-TV) e permite abrir, arrancar no boot e criar atalhos. */
 public class MainActivity extends Activity {
     private static final int ACCENT = 0xFF2E86DE;
+    private static final String GUARD_ADB = "adb shell settings put secure enabled_accessibility_services "
+            + "pt.tvatalhos/pt.tvatalhos.GuardService";
+
     private static final String HELP =
             "Muitas boxes Android baratas têm um ecrã inicial que não mostra apps feitas para Android TV "
             + "(ex.: amigo tv, Disney+). Elas instalam-se, mas não dá para as adicionar ao ecrã inicial.\n\n"
@@ -42,10 +45,14 @@ public class MainActivity extends Activity {
             + "• Lista TODAS as apps. OK abre a app.\n\n"
             + "• Opções (manter OK carregado ou botão MENU do comando):\n"
             + "   – Abrir automaticamente ao ligar a box: a app escolhida abre sozinha uns segundos depois de ligar.\n"
+            + "   – Só esta app (sempre aberta): ideal para pessoas idosas. A TV passa a abrir sempre esta app: "
+            + "ao ligar, ao carregar em HOME ou ao sair dela. Para voltar a esta lista, carregue 3 vezes seguidas em HOME.\n"
             + "   – Pôr no Atalho 1/2/3: aparece um ícone \"Atalho N\" na lista de apps do ecrã inicial da box. "
             + "Adicione-o ao ecrã inicial e ele abre diretamente a app escolhida.\n\n"
             + "• Abrir ao ligar precisa da permissão \"Sobrepor a outras apps\". Se a box não tiver esse ecrã, "
             + "dê-a por ADB:\nadb shell appops set pt.tvatalhos SYSTEM_ALERT_WINDOW allow\n\n"
+            + "O modo \"Só esta app\" precisa de ligar o serviço \"TV Atalhos – só esta app\" em "
+            + "Definições → Acessibilidade. Se a TV não tiver esse ecrã, ligue-o por ADB:\n" + GUARD_ADB + "\n\n"
             + "Dica: abra esta app pelo menos uma vez depois de a instalar, senão o Android não a deixa correr no arranque.";
 
     private final List<ResolveInfo> apps = new ArrayList<>();
@@ -171,6 +178,11 @@ public class MainActivity extends Activity {
             String pkg = p.getString(Apps.slotKey(s), null);
             if (pkg != null) sb.append("   •   Atalho ").append(s).append(": ").append(Apps.label(this, pkg));
         }
+        String kiosk = p.getString(Apps.KIOSK, null);
+        if (kiosk != null) {
+            sb.append("\nSó esta app: ").append(Apps.label(this, kiosk));
+            if (!Apps.guardEnabled(this)) sb.append("  (falta ligar o serviço em Acessibilidade)");
+        }
         status.setText(sb);
         permButton.setVisibility(auto != null && !canStartOnBoot() ? View.VISIBLE : View.GONE);
     }
@@ -190,6 +202,19 @@ public class MainActivity extends Activity {
                 p.edit().putString(Apps.AUTOSTART, isAuto ? null : pkg).apply();
                 refreshStatus();
                 if (!isAuto && !canStartOnBoot()) requestOverlayPermission();
+            }
+        });
+        final boolean isKiosk = pkg.equals(p.getString(Apps.KIOSK, null));
+        labels.add(isKiosk ? "Desligar modo \"só esta app\"" : "Só esta app (sempre aberta)");
+        actions.add(new Runnable() {
+            public void run() {
+                p.edit().putString(Apps.KIOSK, isKiosk ? null : pkg).apply();
+                if (!isKiosk) {
+                    p.edit().putString(Apps.AUTOSTART, pkg).apply();
+                    if (!canStartOnBoot()) requestOverlayPermission();
+                    if (!Apps.guardEnabled(MainActivity.this)) askGuard(pkg);
+                }
+                refreshStatus();
             }
         });
         for (int s = 1; s <= Apps.SLOTS; s++) {
@@ -218,6 +243,28 @@ public class MainActivity extends Activity {
                         actions.get(which).run();
                     }
                 })
+                .show();
+    }
+
+    /** Explica e abre as definições de acessibilidade para ligar o serviço "só esta app". */
+    private void askGuard(String pkg) {
+        final String name = Apps.label(this, pkg);
+        new AlertDialog.Builder(this)
+                .setTitle("Modo \"só esta app\"")
+                .setMessage("Falta um passo: em Acessibilidade, ligue o serviço \"TV Atalhos – só esta app\".\n\n"
+                        + "Depois disso, " + name + " abre sempre: ao ligar, ao carregar em HOME e ao sair dela.\n"
+                        + "Para voltar aqui: carregue 3 vezes seguidas em HOME.\n\n"
+                        + "Se a TV não tiver o ecrã de Acessibilidade, ligue por ADB:\n" + GUARD_ADB)
+                .setPositiveButton("Abrir Acessibilidade", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface d, int w) {
+                        try {
+                            startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS));
+                        } catch (ActivityNotFoundException ignored) {
+                        }
+                    }
+                })
+                .setNegativeButton("Depois", null)
                 .show();
     }
 

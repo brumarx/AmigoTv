@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="guard_name">TV Atalhos – só esta app</string>
+    <string name="guard_description">Modo "só esta app": quando o ecrã inicial aparece, volta a abrir a app escolhida na TV Atalhos. Não lê o conteúdo do ecrã; só vê qual app está aberta.</string>
+</resources>

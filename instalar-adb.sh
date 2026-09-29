@@ -1,12 +1,21 @@
 #!/usr/bin/env bash
 # Instala a TV Atalhos numa TV/box pela rede (ADB) e dá a permissão para abrir apps ao ligar.
-# Uso: ./instalar-adb.sh IP_DA_TV [ficheiro.apk]
+# Uso: ./instalar-adb.sh IP_DA_TV [--so-esta-app] [ficheiro.apk]
+#   --so-esta-app  liga também o serviço de acessibilidade do modo "só esta app"
 # Na TV: Opções de programador → Depuração USB/ADB ligada. Na 1.ª ligação aceite o aviso no ecrã.
 set -euo pipefail
 cd "$(dirname "$0")"
 
-IP=${1:?"Uso: $0 IP_DA_TV [ficheiro.apk]"}
-APK=${2:-TvAtalhos.apk}
+IP=${1:?"Uso: $0 IP_DA_TV [--so-esta-app] [ficheiro.apk]"}
+shift
+KIOSK=0
+APK=TvAtalhos.apk
+for arg in "$@"; do
+    case "$arg" in
+        --so-esta-app) KIOSK=1 ;;
+        *) APK="$arg" ;;
+    esac
+done
 DEV="$IP:5555"
 [[ "$IP" == *:* ]] && DEV="$IP"
 
@@ -26,7 +35,19 @@ done
 echo "Ligado: $(adb -s "$DEV" shell getprop ro.product.model | tr -d '\r') (Android $(adb -s "$DEV" shell getprop ro.build.version.release | tr -d '\r'))"
 adb -s "$DEV" install --no-incremental -r "$APK"
 adb -s "$DEV" shell appops set pt.tvatalhos SYSTEM_ALERT_WINDOW allow
+if [ "$KIOSK" = 1 ]; then
+    GUARD=pt.tvatalhos/pt.tvatalhos.GuardService
+    cur=$(adb -s "$DEV" shell settings get secure enabled_accessibility_services | tr -d '\r')
+    case "$cur" in
+        *"$GUARD"*) ;;
+        null|"") adb -s "$DEV" shell settings put secure enabled_accessibility_services "$GUARD" ;;
+        *) adb -s "$DEV" shell settings put secure enabled_accessibility_services "$cur:$GUARD" ;;
+    esac
+    adb -s "$DEV" shell settings put secure accessibility_enabled 1
+    echo "Serviço \"só esta app\" ligado."
+fi
 adb -s "$DEV" shell am start -n pt.tvatalhos/.MainActivity >/dev/null
 echo
 echo "Pronto. A TV Atalhos está aberta na TV:"
-echo "  escolha a app, mantenha OK carregado (ou MENU) → \"Abrir automaticamente ao ligar a box\"."
+echo "  escolha a app, mantenha OK carregado (ou MENU) → \"Abrir automaticamente ao ligar a box\""
+echo "  ou → \"Só esta app (sempre aberta)\" (use --so-esta-app para ligar o serviço necessário)."

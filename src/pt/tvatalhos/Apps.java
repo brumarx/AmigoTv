@@ -19,6 +19,7 @@ import java.util.Set;
 final class Apps {
     static final int SLOTS = 3;
     static final String AUTOSTART = "autostart";
+    static final String KIOSK = "kiosk";
 
     private Apps() {}
 
@@ -41,6 +42,13 @@ final class Apps {
                 pkg != null ? PackageManager.COMPONENT_ENABLED_STATE_ENABLED
                             : PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
                 PackageManager.DONT_KILL_APP);
+    }
+
+    /** true se o serviço "só esta app" está ligado nas definições de acessibilidade. */
+    static boolean guardEnabled(Context c) {
+        String on = android.provider.Settings.Secure.getString(c.getContentResolver(),
+                android.provider.Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
+        return on != null && on.contains(c.getPackageName() + "/");
     }
 
     /** Todas as apps que se podem abrir, incluindo as que só têm ícone de TV (leanback). */

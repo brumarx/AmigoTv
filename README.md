@@ -23,6 +23,7 @@ A **TV Atalhos** é uma app pequena (~30 KB), sem anúncios, sem internet e sem 
 | **Lista todas as apps** | Mostra também as apps só de TV. Carregue **OK** para abrir. |
 | **Atalho 1 / 2 / 3** | Cria um ícone *"Atalho N"* que **aparece no "+" do ecrã inicial de fábrica**. Adicione-o ao ecrã inicial e ele abre diretamente a app escolhida. |
 | **Abrir ao ligar a box** | A app escolhida (ex.: amigo tv) abre sozinha uns segundos depois de ligar a box. |
+| **Só esta app (sempre aberta)** | Ideal para **pessoas idosas**: a TV fica sempre na app escolhida. Ao ligar, ao carregar em HOME ou ao sair da app, ela volta a abrir. **Saída escondida:** carregar **3 vezes seguidas em HOME** abre a TV Atalhos. |
 
 ## Aparelhos testados
 
@@ -30,6 +31,7 @@ A **TV Atalhos** é uma app pequena (~30 KB), sem anúncios, sem internet e sem 
 |---|---|---|---|
 | Box **X96Q** (Allwinner H313, ecrã inicial `droidlogic.xlauncher`) | Android 10 | Pôr a amigo tv no ecrã inicial (Atalho 1) | ✅ |
 | TV **Xiaomi MiTV** (MOOR2) | Google TV, Android 11 | amigo tv abrir sozinha ao ligar a TV | ✅ (testado desligando da tomada) |
+| TV **Xiaomi MiTV** (MOOR2) | Google TV, Android 11 | Só esta app (amigo tv sempre aberta; 3× HOME para sair) | ✅ |
 
 Nas TVs com **Google TV / Android TV** o ecrã inicial já mostra as apps de TV, por isso o que interessa aí é a função **Abrir ao ligar**. Nas **boxes chinesas** interessam as duas.
 
@@ -55,6 +57,10 @@ Faz tudo de uma vez: instala, dá a permissão de "Abrir ao ligar" e abre a app 
    ```
    ./instalar-adb.sh 192.168.1.57
    ```
+   Para o modo **Só esta app**, junte `--so-esta-app` (liga o serviço de acessibilidade necessário):
+   ```
+   ./instalar-adb.sh 192.168.1.57 --so-esta-app
+   ```
 4. Na primeira vez, aceite na TV o aviso **"Permitir depuração"** (marque *Permitir sempre*).
 5. Na TV, escolha a app → **manter OK** (ou MENU) → **Abrir automaticamente ao ligar a box**.
 
@@ -65,7 +71,8 @@ Faz tudo de uma vez: instala, dá a permissão de "Abrir ao ligar" e abre a app 
 3. Escolha:
    - **Abrir automaticamente ao ligar a box**; ou
    - **Pôr no Atalho 1** (ou 2, 3).
-4. Para o atalho: vá ao ecrã inicial da box → **"+"** → marque **"Atalho 1"**. Esse ícone passa a abrir a app escolhida.
+4. Para o modo **Só esta app**: a app pede para ligar o serviço **"TV Atalhos – só esta app"** em *Definições → Acessibilidade* (ou use `./instalar-adb.sh IP --so-esta-app`). A partir daí, a app fica sempre aberta. **Para sair: 3× HOME.** Para desligar: 3× HOME → escolha a app → *Desligar modo "só esta app"*.
+5. Para o atalho: vá ao ecrã inicial da box → **"+"** → marque **"Atalho 1"**. Esse ícone passa a abrir a app escolhida.
 
 O botão **Ajuda** dentro da app explica o mesmo no ecrã da TV.
 
@@ -77,12 +84,20 @@ A partir do Android 10, só se pode abrir uma app no arranque com a permissão *
 adb shell appops set pt.tvatalhos SYSTEM_ALERT_WINDOW allow
 ```
 
+### Porque é que o "Só esta app" usa Acessibilidade?
+
+As TVs com Google TV (ex.: Xiaomi) **não deixam trocar o ecrã inicial**. Por isso, a TV Atalhos usa um serviço de acessibilidade que só vê **qual app** está aberta, e não o conteúdo do ecrã. Quando aparece o ecrã inicial, volta a abrir a app escolhida. Não precisa de internet e não recolhe dados.
+
 ## Problemas comuns
 
 - **O "Atalho N" não aparece no "+"**: reinicie a box. Alguns ecrãs iniciais só atualizam a lista depois de reiniciar.
 - **A app só abre uns 10–20 segundos depois do ecrã inicial**: é normal. A TV Atalhos espera uns segundos para o ecrã inicial não ficar por cima, e a app escolhida ainda demora a carregar.
 - **A app não abre sozinha ao ligar**: confirme a permissão acima e que abriu a TV Atalhos pelo menos uma vez. Teste **desligando da tomada**, porque o botão de desligar do comando só põe a TV em espera e não é um arranque completo. Algumas boxes têm um "gestor de arranque"/"limpeza de memória" que bloqueia apps. Nesse caso, ponha a TV Atalhos como permitida.
 - **Os ícones dos atalhos dizem "Atalho 1/2/3" e não o nome da app**: é uma limitação do Android, porque o nome do ícone é fixo dentro do APK. A lista de cima na TV Atalhos mostra a que app corresponde cada atalho.
+
+- **A amigo tv (ou outra app) às vezes pede a senha/PIN**: a TV Atalhos **não pode** preencher nem saltar a senha de outra app. É a segurança da conta, e só a app/operador a controla. O que pode ajudar:
+  - se é o **PIN de controlo parental** (aparece ao abrir certos canais/programas): desligue-o nas definições da própria app (na amigo tv: *Definições → Controlo parental / Programas bloqueados*);
+  - se é o **login da conta** (email/palavra-passe): a sessão expira do lado do operador. Na amigo tv, contacte a Vodafone. Evite também "limpezas de memória/dados" automáticas (ex.: *Gestor da TV* da Xiaomi, *MemoryClean* das boxes), porque podem terminar a sessão.
 
 ## Compilar (programadores)
 
@@ -98,7 +113,7 @@ Gera `TvAtalhos.apk`. Na primeira vez cria a chave de assinatura `release.jks`. 
 Estrutura:
 
 - `AndroidManifest.xml`: atividade principal, 3 *activity-alias* de atalho (desativados até serem usados) e o recetor de arranque.
-- `src/pt/tvatalhos/`: `MainActivity` (lista e opções), `SlotActivity` (abre a app de um atalho), `BootReceiver` (abre a app no arranque), `Apps` (utilitários e configuração).
+- `src/pt/tvatalhos/`: `MainActivity` (lista e opções), `SlotActivity` (abre a app de um atalho), `BootReceiver` (abre a app no arranque), `GuardService` (modo "só esta app"), `Apps` (utilitários e configuração).
 - `tools/icons.py`: gera os ícones.
 - `instalar-adb.sh`: instala na TV pela rede e dá a permissão de arranque.
 
