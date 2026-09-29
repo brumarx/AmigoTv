@@ -29,7 +29,7 @@ A **TV Atalhos** é uma app pequena (~30 KB), sem anúncios, sem internet e sem 
 | Aparelho | Sistema | Para que se usou | Resultado |
 |---|---|---|---|
 | Box **X96Q** (Allwinner H313, ecrã inicial `droidlogic.xlauncher`) | Android 10 | Pôr a amigo tv no ecrã inicial (Atalho 1) | ✅ |
-| TV **Xiaomi MiTV** (MOOR2) | Google TV, Android 11 | amigo tv abrir sozinha ao ligar a TV | ✅ (arranque simulado por ADB) |
+| TV **Xiaomi MiTV** (MOOR2) | Google TV, Android 11 | amigo tv abrir sozinha ao ligar a TV | ✅ (testado desligando da tomada) |
 
 Nas TVs com **Google TV / Android TV** o ecrã inicial já mostra as apps de TV, por isso o que interessa aí é a função **Abrir ao ligar**. Nas **boxes chinesas** interessam as duas.
 
@@ -80,6 +80,7 @@ adb shell appops set pt.tvatalhos SYSTEM_ALERT_WINDOW allow
 ## Problemas comuns
 
 - **O "Atalho N" não aparece no "+"**: reinicie a box. Alguns ecrãs iniciais só atualizam a lista depois de reiniciar.
+- **A app só abre uns 10–20 segundos depois do ecrã inicial**: é normal. A TV Atalhos espera uns segundos para o ecrã inicial não ficar por cima, e a app escolhida ainda demora a carregar.
 - **A app não abre sozinha ao ligar**: confirme a permissão acima e que abriu a TV Atalhos pelo menos uma vez. Teste **desligando da tomada**, porque o botão de desligar do comando só põe a TV em espera e não é um arranque completo. Algumas boxes têm um "gestor de arranque"/"limpeza de memória" que bloqueia apps. Nesse caso, ponha a TV Atalhos como permitida.
 - **Os ícones dos atalhos dizem "Atalho 1/2/3" e não o nome da app**: é uma limitação do Android, porque o nome do ícone é fixo dentro do APK. A lista de cima na TV Atalhos mostra a que app corresponde cada atalho.
 
