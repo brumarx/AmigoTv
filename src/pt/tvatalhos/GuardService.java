@@ -46,9 +46,9 @@ public class GuardService extends AccessibilityService {
         public void onReceive(Context c, Intent i) {
             final String kiosk = Apps.prefs(GuardService.this).getString(Apps.KIOSK, null);
             if (kiosk == null) return;
-            handler.removeCallbacksAndMessages(null);
             if (Intent.ACTION_SCREEN_OFF.equals(i.getAction())) {
                 if (shuttingDown) return;
+                handler.removeCallbacksAndMessages(null);
                 shuttingDown = true;
                 screenOff = true;
                 Log.i("TvAtalhos", "botão desligar: a desligar a TV a sério");
@@ -57,9 +57,18 @@ public class GuardService extends AccessibilityService {
                 handler.postDelayed(new Runnable() {
                     @Override
                     public void run() {
-                        performGlobalAction(GLOBAL_ACTION_POWER_DIALOG);
+                        Log.i("TvAtalhos", "menu de desligar: " + performGlobalAction(GLOBAL_ACTION_POWER_DIALOG));
                     }
                 }, 1200);
+                // Carrega em "Desligar" assim que o menu aparecer (tenta várias vezes).
+                for (int k = 0; k < 15; k++) {
+                    handler.postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            clickPowerOff();
+                        }
+                    }, 1800 + k * 600L);
+                }
                 handler.postDelayed(new Runnable() {
                     @Override
                     public void run() {
@@ -67,11 +76,14 @@ public class GuardService extends AccessibilityService {
                         Log.w("TvAtalhos", "não deu para desligar a sério");
                         shuttingDown = false;
                         screenOff = false;
+                        performGlobalAction(GLOBAL_ACTION_BACK);
+                        sendBroadcast(new Intent(ShutdownActivity.ACTION_CLOSE).setPackage(getPackageName()));
                         WaitActivity.openWhenOnline(GuardService.this, kiosk);
                     }
                 }, 15000);
             } else if (Intent.ACTION_SCREEN_ON.equals(i.getAction())) {
                 if (shuttingDown) return; // fomos nós a acender o ecrã para desligar
+                handler.removeCallbacksAndMessages(null);
                 screenOff = false;
                 Log.i("TvAtalhos", "TV ligada: a abrir " + kiosk);
                 lastHomeAt = SystemClock.elapsedRealtime();
