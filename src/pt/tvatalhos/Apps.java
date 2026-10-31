@@ -97,6 +97,28 @@ final class Apps {
         }
     }
 
+    static final String AMIGO = "com.vodafone.lowi.atv.pt";
+    static final int AMIGO_CHANNEL = 1;
+
+    /**
+     * Abre a app escolhida para o arranque / modo "só esta app". A amigo tv abre logo no canal 1
+     * (deep link da própria app); se não der, abre normalmente.
+     */
+    static boolean openStart(Context c, String pkg) {
+        if (AMIGO.equals(pkg)) {
+            Intent i = new Intent(Intent.ACTION_VIEW,
+                    android.net.Uri.parse("vtv://livePlayerScreen/CLUNumber/" + AMIGO_CHANNEL + "?src=tvatalhos"))
+                    .setPackage(pkg).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            try {
+                c.startActivity(i);
+                return true;
+            } catch (RuntimeException e) {
+                android.util.Log.w("TvAtalhos", "canal direto falhou, a abrir normalmente", e);
+            }
+        }
+        return open(c, pkg);
+    }
+
     static boolean open(Context c, String pkg) {
         Intent i = launchIntent(c, pkg);
         if (i == null) {

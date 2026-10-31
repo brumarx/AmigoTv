@@ -47,7 +47,7 @@ public class WaitActivity extends Activity {
     static void openWhenOnline(Context c, String pkg) {
         if (pkg == null) return;
         if (online(c, true)) {
-            Apps.open(c, pkg);
+            Apps.openStart(c, pkg);
             return;
         }
         c.startActivity(new Intent(c, WaitActivity.class).putExtra(EXTRA_PKG, pkg)
@@ -177,7 +177,7 @@ public class WaitActivity extends Activity {
 
     private void launch() {
         handler.removeCallbacks(poll);
-        if (pkg != null) Apps.open(this, pkg);
+        if (pkg != null) Apps.openStart(this, pkg);
         finish();
     }
 

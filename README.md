@@ -25,6 +25,7 @@ A **TV Atalhos** é uma app pequena (~30 KB), sem anúncios, sem internet e sem 
 | **Abrir ao ligar a box** | A app escolhida (ex.: amigo tv) abre sozinha uns segundos depois de ligar a box. |
 | **Só esta app (sempre aberta)** | Ideal para **pessoas idosas**: a TV fica sempre na app escolhida. Ao ligar, ao carregar em HOME ou ao sair da app, ela volta a abrir. **Saída escondida:** carregar **3 vezes seguidas em HOME** abre a TV Atalhos. |
 | **Desligar a sério (sem standby)** | No modo *Só esta app*, o botão de desligar do comando **desliga mesmo a TV** em vez de a pôr em standby: a TV Atalhos escolhe sozinha *Desligar* no menu da TV. Assim a app nunca fica dias aberta até encravar, e ao ligar tudo arranca do zero. |
+| **amigo tv direto no canal 1** | No arranque e no modo *Só esta app*, a amigo tv abre logo no **canal 1** em direto (em vez do menu). Depois muda-se de canal normalmente com o comando. |
 | **Espera pela internet** | Se o Wi-Fi ainda não ligou, mostra **"A ligar à internet…"** em letras grandes e só abre a app quando houver internet (e volta a ligar o Wi-Fi se estiver desligado). |
 
 ## Aparelhos testados
