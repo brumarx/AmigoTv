@@ -1,12 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="pt.tvatalhos" android:versionCode="4" android:versionName="1.3">
+    package="pt.tvatalhos" android:versionCode="6" android:versionName="1.5">
 
     <uses-sdk android:minSdkVersion="21" android:targetSdkVersion="23" />
 
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <!-- Android 10+ só deixa abrir apps no arranque a quem tem esta permissão -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <!-- Esperar pela internet antes de abrir a app; voltar a ligar o Wi-Fi se estiver desligado -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
 
     <uses-feature android:name="android.software.leanback" android:required="false" />
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
@@ -30,6 +34,14 @@
             </intent-filter>
             <meta-data android:name="android.accessibilityservice" android:resource="@xml/guard" />
         </service>
+
+        <!-- Ecrã "A ligar à internet…" mostrado até haver internet -->
+        <activity android:name=".WaitActivity" android:excludeFromRecents="true"
+            android:launchMode="singleTask" android:exported="false" />
+
+        <!-- Ecrã "A desligar…" que acende o ecrã para escolher "Desligar" no menu da TV -->
+        <activity android:name=".ShutdownActivity" android:excludeFromRecents="true"
+            android:theme="@android:style/Theme.NoTitleBar.Fullscreen" android:exported="false" />
 
         <!-- Atalhos diretos: ficam desativados até lhes ser atribuída uma app -->
         <activity android:name=".SlotActivity" android:theme="@android:style/Theme.NoDisplay"

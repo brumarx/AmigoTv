@@ -24,6 +24,8 @@ A **TV Atalhos** é uma app pequena (~30 KB), sem anúncios, sem internet e sem 
 | **Atalho 1 / 2 / 3** | Cria um ícone *"Atalho N"* que **aparece no "+" do ecrã inicial de fábrica**. Adicione-o ao ecrã inicial e ele abre diretamente a app escolhida. |
 | **Abrir ao ligar a box** | A app escolhida (ex.: amigo tv) abre sozinha uns segundos depois de ligar a box. |
 | **Só esta app (sempre aberta)** | Ideal para **pessoas idosas**: a TV fica sempre na app escolhida. Ao ligar, ao carregar em HOME ou ao sair da app, ela volta a abrir. **Saída escondida:** carregar **3 vezes seguidas em HOME** abre a TV Atalhos. |
+| **Desligar a sério (sem standby)** | No modo *Só esta app*, o botão de desligar do comando **desliga mesmo a TV** em vez de a pôr em standby: a TV Atalhos escolhe sozinha *Desligar* no menu da TV. Assim a app nunca fica dias aberta até encravar, e ao ligar tudo arranca do zero. |
+| **Espera pela internet** | Se o Wi-Fi ainda não ligou, mostra **"A ligar à internet…"** em letras grandes e só abre a app quando houver internet (e volta a ligar o Wi-Fi se estiver desligado). |
 
 ## Aparelhos testados
 
@@ -32,6 +34,7 @@ A **TV Atalhos** é uma app pequena (~30 KB), sem anúncios, sem internet e sem 
 | Box **X96Q** (Allwinner H313, ecrã inicial `droidlogic.xlauncher`) | Android 10 | Pôr a amigo tv no ecrã inicial (Atalho 1) | ✅ |
 | TV **Xiaomi MiTV** (MOOR2) | Google TV, Android 11 | amigo tv abrir sozinha ao ligar a TV | ✅ (testado desligando da tomada) |
 | TV **Xiaomi MiTV** (MOOR2) | Google TV, Android 11 | Só esta app (amigo tv sempre aberta; 3× HOME para sair) | ✅ |
+| TV **Xiaomi MiTV** (MOOR2) | Google TV, Android 11 | Botão de desligar desliga a sério; ao ligar, amigo tv abre após o Wi-Fi | ✅ |
 
 Nas TVs com **Google TV / Android TV** o ecrã inicial já mostra as apps de TV, por isso o que interessa aí é a função **Abrir ao ligar**. Nas **boxes chinesas** interessam as duas.
 
@@ -86,12 +89,13 @@ adb shell appops set pt.tvatalhos SYSTEM_ALERT_WINDOW allow
 
 ### Porque é que o "Só esta app" usa Acessibilidade?
 
-As TVs com Google TV (ex.: Xiaomi) **não deixam trocar o ecrã inicial**. Por isso, a TV Atalhos usa um serviço de acessibilidade que só vê **qual app** está aberta, e não o conteúdo do ecrã. Quando aparece o ecrã inicial, volta a abrir a app escolhida. Não precisa de internet e não recolhe dados.
+As TVs com Google TV (ex.: Xiaomi) **não deixam trocar o ecrã inicial**. Por isso, a TV Atalhos usa um serviço de acessibilidade que só vê **qual app** está aberta, e não o conteúdo das apps. Quando aparece o ecrã inicial, volta a abrir a app escolhida. Ao carregar no botão de desligar, acende o ecrã por um instante ("A desligar…"), abre o menu de desligar da TV e carrega em **Desligar**. Não precisa de internet e não recolhe dados.
 
 ## Problemas comuns
 
 - **O "Atalho N" não aparece no "+"**: reinicie a box. Alguns ecrãs iniciais só atualizam a lista depois de reiniciar.
 - **A app só abre uns 10–20 segundos depois do ecrã inicial**: é normal. A TV Atalhos espera uns segundos para o ecrã inicial não ficar por cima, e a app escolhida ainda demora a carregar.
+- **Ao carregar em desligar aparece "A desligar…" e o menu da TV**: é normal, dura 1–2 segundos e a TV desliga. Se o menu da sua TV não tiver o botão *Desligar* (ou *Power off*), a TV volta ao normal ao fim de 15 s.
 - **A app não abre sozinha ao ligar**: confirme a permissão acima e que abriu a TV Atalhos pelo menos uma vez. Teste **desligando da tomada**, porque o botão de desligar do comando só põe a TV em espera e não é um arranque completo. Algumas boxes têm um "gestor de arranque"/"limpeza de memória" que bloqueia apps. Nesse caso, ponha a TV Atalhos como permitida.
 - **Os ícones dos atalhos dizem "Atalho 1/2/3" e não o nome da app**: é uma limitação do Android, porque o nome do ícone é fixo dentro do APK. A lista de cima na TV Atalhos mostra a que app corresponde cada atalho.
 

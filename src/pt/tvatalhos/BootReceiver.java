@@ -8,7 +8,8 @@ import android.os.Looper;
 
 /**
  * No arranque da box, abre a app escolhida depois de uma pequena espera (para o ecrã inicial
- * de fábrica não ficar por cima). Não usa AlarmManager: algumas TVs (ex.: Xiaomi) adiam os
+ * de fábrica não ficar por cima). Se o Wi-Fi ainda não ligou, mostra "A ligar à internet…" e
+ * só abre a app quando houver internet. Não usa AlarmManager: algumas TVs (ex.: Xiaomi) adiam os
  * alarmes de apps de terceiros no arranque até 24 h.
  */
 public class BootReceiver extends BroadcastReceiver {
@@ -17,14 +18,14 @@ public class BootReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context c, Intent intent) {
         final Context app = c.getApplicationContext();
-        final Intent launch = Apps.launchIntent(app, Apps.prefs(app).getString(Apps.AUTOSTART, null));
-        if (launch == null) return;
+        final String pkg = Apps.prefs(app).getString(Apps.AUTOSTART, null);
+        if (Apps.launchIntent(app, pkg) == null) return;
         final PendingResult pending = goAsync();
         new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
             @Override
             public void run() {
                 try {
-                    app.startActivity(launch);
+                    WaitActivity.openWhenOnline(app, pkg);
                 } finally {
                     pending.finish();
                 }
