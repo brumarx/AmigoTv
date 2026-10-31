@@ -99,12 +99,20 @@ final class Apps {
 
     static final String AMIGO = "com.vodafone.lowi.atv.pt";
     static final int AMIGO_CHANNEL = 1;
+    /** Tempo para a app arrancar sem ser reaberta (o ecrã inicial pisca durante o arranque). */
+    static final long START_GRACE_MS = 25000;
+    static long lastStartAt = -START_GRACE_MS;
+
+    static boolean starting() {
+        return android.os.SystemClock.elapsedRealtime() - lastStartAt < START_GRACE_MS;
+    }
 
     /**
      * Abre a app escolhida para o arranque / modo "só esta app". A amigo tv abre logo no canal 1
      * (deep link da própria app); se não der, abre normalmente.
      */
     static boolean openStart(Context c, String pkg) {
+        lastStartAt = android.os.SystemClock.elapsedRealtime();
         if (AMIGO.equals(pkg)) {
             Intent i = new Intent(Intent.ACTION_VIEW,
                     android.net.Uri.parse("vtv://livePlayerScreen/CLUNumber/" + AMIGO_CHANNEL + "?src=tvatalhos"))

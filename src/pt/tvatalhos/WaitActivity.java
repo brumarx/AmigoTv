@@ -45,7 +45,7 @@ public class WaitActivity extends Activity {
 
     /** Abre a app já se houver internet; senão mostra este ecrã até haver. */
     static void openWhenOnline(Context c, String pkg) {
-        if (pkg == null) return;
+        if (pkg == null || Apps.starting()) return; // já está a arrancar: não interromper
         if (online(c, true)) {
             Apps.openStart(c, pkg);
             return;

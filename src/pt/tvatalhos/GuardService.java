@@ -129,6 +129,7 @@ public class GuardService extends AccessibilityService {
             return;
         }
         if (screenOff || !launchers.contains(e.getPackageName().toString())) return;
+        if (Apps.starting()) return; // a app ainda está a arrancar e o ecrã inicial pisca
         SharedPreferences p = Apps.prefs(this);
         final String kiosk = p.getString(Apps.KIOSK, null);
         if (kiosk == null) return;
