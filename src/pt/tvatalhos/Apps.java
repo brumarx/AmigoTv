@@ -65,10 +65,14 @@ final class Apps {
             }
         }
         final PackageManager fpm = pm;
+        final java.util.Map<ResolveInfo, String> labelCache = new java.util.HashMap<>();
+        for (ResolveInfo ri : all) {
+            labelCache.put(ri, label(ri, fpm));
+        }
         Collections.sort(all, new Comparator<ResolveInfo>() {
             @Override
             public int compare(ResolveInfo a, ResolveInfo b) {
-                return label(a, fpm).compareToIgnoreCase(label(b, fpm));
+                return labelCache.get(a).compareToIgnoreCase(labelCache.get(b));
             }
         });
         return all;

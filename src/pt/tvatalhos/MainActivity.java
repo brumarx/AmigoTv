@@ -30,7 +30,9 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /** Lista todas as apps (incluindo as só-TV) e permite abrir, arrancar no boot e criar atalhos. */
 public class MainActivity extends Activity {
@@ -59,10 +61,12 @@ public class MainActivity extends Activity {
     private GridView grid;
     private TextView status;
     private Button permButton;
+    private SharedPreferences prefs;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        prefs = Apps.prefs(this);
 
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
@@ -144,8 +148,11 @@ public class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
-        apps.clear();
-        apps.addAll(Apps.list(this));
+        List<ResolveInfo> newApps = Apps.list(this);
+        if (apps.size() != newApps.size() || !apps.equals(newApps)) {
+            apps.clear();
+            apps.addAll(newApps);
+        }
         adapter.notifyDataSetChanged();
         refreshStatus();
         grid.requestFocus();
@@ -295,6 +302,11 @@ public class MainActivity extends Activity {
         return Math.round(v * getResources().getDisplayMetrics().density);
     }
 
+    private static class ViewHolder {
+        ImageView icon;
+        TextView label;
+    }
+
     private final BaseAdapter adapter = new BaseAdapter() {
         @Override
         public int getCount() {
@@ -313,33 +325,44 @@ public class MainActivity extends Activity {
 
         @Override
         public View getView(int pos, View convert, ViewGroup parent) {
-            LinearLayout cell = (LinearLayout) convert;
-            if (cell == null) {
-                cell = new LinearLayout(MainActivity.this);
+            ViewHolder holder;
+            if (convert == null) {
+                LinearLayout cell = new LinearLayout(MainActivity.this);
                 cell.setOrientation(LinearLayout.VERTICAL);
                 cell.setGravity(Gravity.CENTER_HORIZONTAL);
                 cell.setPadding(dp(8), dp(12), dp(8), dp(10));
                 cell.setBackground(new ColorDrawable(Color.TRANSPARENT));
-                ImageView icon = new ImageView(MainActivity.this);
-                cell.addView(icon, new LinearLayout.LayoutParams(dp(64), dp(64)));
-                TextView label = new TextView(MainActivity.this);
-                label.setTextColor(Color.WHITE);
-                label.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
-                label.setGravity(Gravity.CENTER);
-                label.setMaxLines(2);
-                label.setEllipsize(TextUtils.TruncateAt.END);
-                label.setPadding(0, dp(6), 0, 0);
-                cell.addView(label);
+
+                holder = new ViewHolder();
+                holder.icon = new ImageView(MainActivity.this);
+                cell.addView(holder.icon, new LinearLayout.LayoutParams(dp(64), dp(64)));
+
+                holder.label = new TextView(MainActivity.this);
+                holder.label.setTextColor(Color.WHITE);
+                holder.label.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+                holder.label.setGravity(Gravity.CENTER);
+                holder.label.setMaxLines(2);
+                holder.label.setEllipsize(TextUtils.TruncateAt.END);
+                holder.label.setPadding(0, dp(6), 0, 0);
+                cell.addView(holder.label);
+
+                cell.setTag(holder);
+                convert = cell;
+            } else {
+                holder = (ViewHolder) convert.getTag();
             }
+
             ResolveInfo ri = apps.get(pos);
             PackageManager pm = getPackageManager();
             String pkg = ri.activityInfo.packageName;
-            SharedPreferences p = Apps.prefs(MainActivity.this);
-            ((ImageView) cell.getChildAt(0)).setImageDrawable(ri.loadIcon(pm));
+
+            holder.icon.setImageDrawable(ri.loadIcon(pm));
+
             String text = Apps.label(ri, pm);
-            if (pkg.equals(p.getString(Apps.AUTOSTART, null))) text = "★ " + text;
-            ((TextView) cell.getChildAt(1)).setText(text);
-            return cell;
+            if (pkg.equals(prefs.getString(Apps.AUTOSTART, null))) text = "★ " + text;
+            holder.label.setText(text);
+
+            return convert;
         }
     };
 }
