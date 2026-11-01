@@ -17,6 +17,7 @@ import android.os.Bundle;
 import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.TypedValue;
+import android.os.AsyncTask;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
@@ -33,6 +34,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /** Lista todas as apps (incluindo as só-TV) e permite abrir, arrancar no boot e criar atalhos. */
 public class MainActivity extends Activity {
@@ -62,11 +64,14 @@ public class MainActivity extends Activity {
     private TextView status;
     private Button permButton;
     private SharedPreferences prefs;
+    private PackageManager pm;
+    private final Map<String, android.graphics.drawable.Drawable> iconCache = new ConcurrentHashMap<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         prefs = Apps.prefs(this);
+        pm = getPackageManager();
 
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
@@ -353,10 +358,16 @@ public class MainActivity extends Activity {
             }
 
             ResolveInfo ri = apps.get(pos);
-            PackageManager pm = getPackageManager();
             String pkg = ri.activityInfo.packageName;
 
-            holder.icon.setImageDrawable(ri.loadIcon(pm));
+            android.graphics.drawable.Drawable cached = iconCache.get(pkg);
+            if (cached != null) {
+                holder.icon.setImageDrawable(cached);
+            } else {
+                android.graphics.drawable.Drawable drawable = ri.loadIcon(pm);
+                iconCache.put(pkg, drawable);
+                holder.icon.setImageDrawable(drawable);
+            }
 
             String text = Apps.label(ri, pm);
             if (pkg.equals(prefs.getString(Apps.AUTOSTART, null))) text = "★ " + text;
