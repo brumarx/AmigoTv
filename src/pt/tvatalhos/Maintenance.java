@@ -143,16 +143,11 @@ public class Maintenance extends Activity {
     }
 
     private void freeMemory() {
+        Apps.freeMemoryExcept(this, null); // fecha tudo menos o WireGuard e a TV Atalhos
         ActivityManager am = (ActivityManager) getSystemService(ACTIVITY_SERVICE);
-        int killed = 0;
-        for (android.content.pm.ApplicationInfo ai :
-                getPackageManager().getInstalledApplications(0)) {
-            if (ai.packageName.equals(getPackageName())) continue;
-            try { am.killBackgroundProcesses(ai.packageName); killed++; } catch (RuntimeException ignored) {}
-        }
         ActivityManager.MemoryInfo mi = new ActivityManager.MemoryInfo();
         am.getMemoryInfo(mi);
-        toast("Memória livre: " + (mi.availMem / (1024 * 1024)) + " MB  •  apps fechadas: " + killed);
+        toast("A fechar apps em segundo plano…  Memória livre: " + (mi.availMem / (1024 * 1024)) + " MB");
     }
 
     private void openSettings(String action) {

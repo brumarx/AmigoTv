@@ -101,6 +101,37 @@ final class Apps {
         }
     }
 
+    /** A VPN nunca é fechada ao abrir uma app (tem de ficar sempre ligada). */
+    static final String WIREGUARD = "com.wireguard.android";
+
+    /**
+     * Liberta memória: fecha as apps em segundo plano, menos a que se acabou de abrir, o WireGuard
+     * e a própria TV Atalhos. Corre numa thread para não atrasar a abertura da app.
+     */
+    static void freeMemoryExcept(final Context c, final String keepPkg) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    android.app.ActivityManager am =
+                            (android.app.ActivityManager) c.getSystemService(Context.ACTIVITY_SERVICE);
+                    if (am == null) return;
+                    String self = c.getPackageName();
+                    for (android.content.pm.ApplicationInfo ai :
+                            c.getPackageManager().getInstalledApplications(0)) {
+                        String p = ai.packageName;
+                        if (p.equals(keepPkg) || p.equals(self) || p.equals(WIREGUARD)) continue;
+                        try {
+                            am.killBackgroundProcesses(p);
+                        } catch (RuntimeException ignored) {
+                        }
+                    }
+                } catch (RuntimeException ignored) {
+                }
+            }
+        }, "tvatalhos-freemem").start();
+    }
+
     static final String AMIGO = "com.vodafone.lowi.atv.pt";
     static final int AMIGO_CHANNEL = 1;
     /** Tempo para a app arrancar sem ser reaberta (o ecrã inicial pisca durante o arranque). */
@@ -123,6 +154,7 @@ final class Apps {
                     .setPackage(pkg).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             try {
                 c.startActivity(i);
+                freeMemoryExcept(c, pkg);
                 return true;
             } catch (RuntimeException e) {
                 android.util.Log.w("TvAtalhos", "canal direto falhou, a abrir normalmente", e);
@@ -138,6 +170,7 @@ final class Apps {
             return false;
         }
         c.startActivity(i);
+        freeMemoryExcept(c, pkg);
         return true;
     }
 }
