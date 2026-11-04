@@ -41,6 +41,16 @@ public class GuardService extends AccessibilityService {
     private boolean shuttingDown;
     private static final String[] POWER_OFF = {"Desligar", "Power off", "Shut down", "Apagar", "OK"};
 
+    /** Pedido da Manutenção para desligar a TV a sério (sem root). */
+    static final String ACTION_SHUTDOWN = "pt.tvatalhos.DESLIGAR";
+
+    private final BroadcastReceiver shutdown = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context c, Intent i) {
+            realShutdown();
+        }
+    };
+
     // --- Login automático da amigo tv (se perder a sessão) ---
     static final String ACTION_SET_LOGIN = "pt.tvatalhos.DEFINIR_LOGIN";
     private static final String LOGIN_USER = "login_user", LOGIN_PASS = "login_pass";
@@ -112,40 +122,7 @@ public class GuardService extends AccessibilityService {
             final String kiosk = Apps.prefs(GuardService.this).getString(Apps.KIOSK, null);
             if (kiosk == null) return;
             if (Intent.ACTION_SCREEN_OFF.equals(i.getAction())) {
-                if (shuttingDown) return;
-                handler.removeCallbacksAndMessages(null);
-                shuttingDown = true;
-                screenOff = true;
-                Log.i("TvAtalhos", "botão desligar: a desligar a TV a sério");
-                startActivity(new Intent(GuardService.this, ShutdownActivity.class)
-                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_ANIMATION));
-                handler.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        Log.i("TvAtalhos", "menu de desligar: " + performGlobalAction(GLOBAL_ACTION_POWER_DIALOG));
-                    }
-                }, 1200);
-                // Carrega em "Desligar" assim que o menu aparecer (tenta várias vezes).
-                for (int k = 0; k < 15; k++) {
-                    handler.postDelayed(new Runnable() {
-                        @Override
-                        public void run() {
-                            clickPowerOff();
-                        }
-                    }, 1800 + k * 600L);
-                }
-                handler.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        // Não conseguiu desligar: deixa a TV voltar ao normal.
-                        Log.w("TvAtalhos", "não deu para desligar a sério");
-                        shuttingDown = false;
-                        screenOff = false;
-                        performGlobalAction(GLOBAL_ACTION_BACK);
-                        sendBroadcast(new Intent(ShutdownActivity.ACTION_CLOSE).setPackage(getPackageName()));
-                        WaitActivity.openWhenOnline(GuardService.this, kiosk);
-                    }
-                }, 15000);
+                realShutdown();
             } else if (Intent.ACTION_SCREEN_ON.equals(i.getAction())) {
                 if (shuttingDown) return; // fomos nós a acender o ecrã para desligar
                 handler.removeCallbacksAndMessages(null);
@@ -177,6 +154,7 @@ public class GuardService extends AccessibilityService {
         registerReceiver(screen, f);
         // Só o ADB (shell, que tem DUMP) pode gravar o login; outras apps não.
         registerReceiver(saveLogin, new IntentFilter(ACTION_SET_LOGIN), "android.permission.DUMP", null);
+        registerReceiver(shutdown, new IntentFilter(ACTION_SHUTDOWN));
     }
 
     @Override
@@ -187,6 +165,10 @@ public class GuardService extends AccessibilityService {
         }
         try {
             unregisterReceiver(screen);
+        } catch (IllegalArgumentException ignored) {
+        }
+        try {
+            unregisterReceiver(shutdown);
         } catch (IllegalArgumentException ignored) {
         }
         super.onDestroy();
@@ -233,6 +215,48 @@ public class GuardService extends AccessibilityService {
                 WaitActivity.openWhenOnline(GuardService.this, kiosk);
             }
         }, RELAUNCH_DELAY_MS);
+    }
+
+    /**
+     * Desliga a TV a sério (sem standby): abre o menu de desligar e carrega em "Desligar".
+     * Serve tanto para o botão físico (SCREEN_OFF) como para o botão "Desligar" da Manutenção.
+     */
+    void realShutdown() {
+        if (shuttingDown) return;
+        final String kiosk = Apps.prefs(this).getString(Apps.KIOSK, null);
+        handler.removeCallbacksAndMessages(null);
+        shuttingDown = true;
+        screenOff = true;
+        Log.i("TvAtalhos", "a desligar a TV a sério");
+        startActivity(new Intent(this, ShutdownActivity.class)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_ANIMATION));
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                Log.i("TvAtalhos", "menu de desligar: " + performGlobalAction(GLOBAL_ACTION_POWER_DIALOG));
+            }
+        }, 1200);
+        // Carrega em "Desligar" assim que o menu aparecer (tenta várias vezes).
+        for (int k = 0; k < 15; k++) {
+            handler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    clickPowerOff();
+                }
+            }, 1800 + k * 600L);
+        }
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                // Não conseguiu desligar: deixa a TV voltar ao normal.
+                Log.w("TvAtalhos", "não deu para desligar a sério");
+                shuttingDown = false;
+                screenOff = false;
+                performGlobalAction(GLOBAL_ACTION_BACK);
+                sendBroadcast(new Intent(ShutdownActivity.ACTION_CLOSE).setPackage(getPackageName()));
+                if (kiosk != null) WaitActivity.openWhenOnline(GuardService.this, kiosk);
+            }
+        }, 15000);
     }
 
     /** No menu de desligar da TV, carrega em "Desligar" (e em "OK" se pedir confirmação). */

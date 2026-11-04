@@ -96,6 +96,34 @@ public class Maintenance extends Activity {
         item("Definições de apps", "Desinstalar ou forçar paragem de apps", new Runnable() {
             @Override public void run() { openSettings(Settings.ACTION_APPLICATION_SETTINGS); }
         });
+
+        section("Energia");
+        item("Desligar a TV (sem standby)", "Desliga a sério, não fica em espera", new Runnable() {
+            @Override public void run() { confirmPower("Desligar a TV?",
+                    "A TV vai desligar a sério (não fica em espera).", true); }
+        });
+        item("Reiniciar a box", "A box reinicia (precisa de root)", new Runnable() {
+            @Override public void run() { confirmPower("Reiniciar a box?",
+                    "A box vai reiniciar agora.", false); }
+        });
+    }
+
+    private void confirmPower(String title, String msg, final boolean off) {
+        new AlertDialog.Builder(this)
+                .setTitle(title).setMessage(msg)
+                .setNegativeButton("Cancelar", null)
+                .setPositiveButton(off ? "Desligar" : "Reiniciar", new android.content.DialogInterface.OnClickListener() {
+                    @Override public void onClick(android.content.DialogInterface d, int w) {
+                        boolean ok = off ? Power.shutdown(Maintenance.this) : Power.restart();
+                        if (!ok) new AlertDialog.Builder(Maintenance.this)
+                                .setTitle("Não foi possível")
+                                .setMessage(off
+                                    ? "Esta box não deu para desligar a sério.\n\nPara o botão funcionar, "
+                                      + "ligue o modo \"só esta app\" (serviço de acessibilidade) ou use uma box com root."
+                                    : "Reiniciar precisa de root, que esta box não tem.")
+                                .setPositiveButton("OK", null).show();
+                    }
+                }).show();
     }
 
     private void startInstall(TvApk app) {
