@@ -18,5 +18,8 @@ final class TvApk {
         // Netflix, Inc. (CN=PPD Builder, O="Netflix, Inc.")
         new TvApk("Netflix (TV)", "com.netflix.ninja",
                 "363863596ea99241eb71b1a985553aa604de3ea3c5f0c546742390e682164e6b"),
+        // WireGuard LLC (O=WireGuard LLC, CN=WireGuard Android Infrastructure)
+        new TvApk("WireGuard (VPN)", "com.wireguard.android",
+                "84a13fa2c4e0064b0c11654b8a86574b7a9b9352a3834cee32455b061c3d4127"),
     };
 }
