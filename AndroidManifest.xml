@@ -1,10 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="pt.tvatalhos" android:versionCode="6" android:versionName="1.5">
+    package="pt.tvatalhos" android:versionCode="7" android:versionName="1.6">
 
     <uses-sdk android:minSdkVersion="21" android:targetSdkVersion="23" />
 
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- Manutenção: descarregar o APK oficial da Netflix (TV) e libertar memória -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.KILL_BACKGROUND_PROCESSES" />
     <!-- Android 10+ só deixa abrir apps no arranque a quem tem esta permissão -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <!-- Esperar pela internet antes de abrir a app; voltar a ligar o Wi-Fi se estiver desligado -->
@@ -25,6 +28,9 @@
                 <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Ecrã de manutenção: instalar Netflix (TV), libertar memória -->
+        <activity android:name=".Maintenance" android:label="Manutenção" android:exported="false" />
 
         <!-- Modo "só esta app": serviço de acessibilidade que reabre a app quando aparece o ecrã inicial -->
         <service android:name=".GuardService" android:label="@string/guard_name"

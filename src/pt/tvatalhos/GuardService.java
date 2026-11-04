@@ -41,6 +41,71 @@ public class GuardService extends AccessibilityService {
     private boolean shuttingDown;
     private static final String[] POWER_OFF = {"Desligar", "Power off", "Shut down", "Apagar", "OK"};
 
+    // --- Login automático da amigo tv (se perder a sessão) ---
+    static final String ACTION_SET_LOGIN = "pt.tvatalhos.DEFINIR_LOGIN";
+    private static final String LOGIN_USER = "login_user", LOGIN_PASS = "login_pass";
+    private static final long LOGIN_WINDOW_MS = 10 * 60 * 1000;
+    private static final int LOGIN_MAX_TRIES = 2;
+    private long loginWindowStart;
+    private int loginTries;
+    private long lastLoginAt;
+    private long lastLoginCheckAt;
+
+    private final BroadcastReceiver saveLogin = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context c, Intent i) {
+            String u = i.getStringExtra("user"), pw = i.getStringExtra("pass");
+            SharedPreferences.Editor ed = Apps.prefs(GuardService.this).edit();
+            if (u == null || u.isEmpty() || pw == null || pw.isEmpty()) {
+                ed.remove(LOGIN_USER).remove(LOGIN_PASS).apply();
+                Log.i("TvAtalhos", "login automático apagado");
+            } else {
+                ed.putString(LOGIN_USER, u).putString(LOGIN_PASS, pw).apply();
+                loginTries = 0;
+                Log.i("TvAtalhos", "login automático gravado");
+            }
+        }
+    };
+
+    /** Se a amigo tv mostrar o ecrã de login, preenche utilizador e senha e carrega em Avançar. */
+    private void autoLogin() {
+        SharedPreferences p = Apps.prefs(this);
+        String u = p.getString(LOGIN_USER, null), pw = p.getString(LOGIN_PASS, null);
+        if (u == null || pw == null) return;
+        long now = SystemClock.elapsedRealtime();
+        if (now - lastLoginCheckAt < 2000 || now - lastLoginAt < 5000) return; // poupar a TV
+        lastLoginCheckAt = now;
+        AccessibilityNodeInfo root = getRootInActiveWindow();
+        if (root == null) return;
+        String id = Apps.AMIGO + ":id/";
+        AccessibilityNodeInfo user = first(root, id + "et_username");
+        AccessibilityNodeInfo pass = first(root, id + "et_password");
+        AccessibilityNodeInfo go = first(root, id + "btn_advance");
+        if (user == null || pass == null || go == null) return;
+        if (now - loginWindowStart > LOGIN_WINDOW_MS) {
+            loginWindowStart = now;
+            loginTries = 0;
+        }
+        if (loginTries >= LOGIN_MAX_TRIES) return; // não insistir: a senha pode estar errada
+        loginTries++;
+        lastLoginAt = now;
+        setText(user, u);
+        setText(pass, pw);
+        boolean ok = go.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+        Log.i("TvAtalhos", "login automático da amigo tv (tentativa " + loginTries + "): " + ok);
+    }
+
+    private static AccessibilityNodeInfo first(AccessibilityNodeInfo root, String viewId) {
+        java.util.List<AccessibilityNodeInfo> l = root.findAccessibilityNodeInfosByViewId(viewId);
+        return l == null || l.isEmpty() ? null : l.get(0);
+    }
+
+    private static void setText(AccessibilityNodeInfo n, String text) {
+        android.os.Bundle b = new android.os.Bundle();
+        b.putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, text);
+        n.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, b);
+    }
+
     private final BroadcastReceiver screen = new BroadcastReceiver() {
         @Override
         public void onReceive(Context c, Intent i) {
@@ -110,10 +175,16 @@ public class GuardService extends AccessibilityService {
         IntentFilter f = new IntentFilter(Intent.ACTION_SCREEN_OFF);
         f.addAction(Intent.ACTION_SCREEN_ON);
         registerReceiver(screen, f);
+        // Só o ADB (shell, que tem DUMP) pode gravar o login; outras apps não.
+        registerReceiver(saveLogin, new IntentFilter(ACTION_SET_LOGIN), "android.permission.DUMP", null);
     }
 
     @Override
     public void onDestroy() {
+        try {
+            unregisterReceiver(saveLogin);
+        } catch (IllegalArgumentException ignored) {
+        }
         try {
             unregisterReceiver(screen);
         } catch (IllegalArgumentException ignored) {
@@ -123,7 +194,12 @@ public class GuardService extends AccessibilityService {
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent e) {
-        if (e.getEventType() != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED || e.getPackageName() == null) return;
+        if (e.getPackageName() == null) return;
+        if (Apps.AMIGO.equals(e.getPackageName().toString())) {
+            autoLogin();
+            return;
+        }
+        if (e.getEventType() != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return;
         if (shuttingDown) {
             if ("com.android.systemui".equals(e.getPackageName().toString())) clickPowerOff();
             return;

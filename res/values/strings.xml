@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="guard_name">TV Atalhos – só esta app</string>
-    <string name="guard_description">Modo "só esta app": quando o ecrã inicial aparece, volta a abrir a app escolhida na TV Atalhos. Ao carregar no botão de desligar, escolhe "Desligar" no menu da TV para a desligar a sério (sem standby). Não lê o conteúdo das apps; só vê qual app está aberta e o menu de desligar.</string>
+    <string name="guard_description">Modo "só esta app": quando o ecrã inicial aparece, volta a abrir a app escolhida na TV Atalhos. Ao carregar no botão de desligar, escolhe "Desligar" no menu da TV para a desligar a sério (sem standby). Se a amigo tv pedir login e a família tiver gravado o email/senha por ADB, preenche-os sozinho. Não lê o conteúdo de outras apps; só vê qual app está aberta, o menu de desligar e o ecrã de login da amigo tv.</string>
 </resources>

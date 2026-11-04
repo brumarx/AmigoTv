@@ -107,6 +107,17 @@ public class MainActivity extends Activity {
         root.addView(help, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
+        Button maint = new Button(this);
+        maint.setText("Manutenção (instalar Netflix, libertar memória)");
+        maint.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivity(new Intent(MainActivity.this, Maintenance.class));
+            }
+        });
+        root.addView(maint, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
         permButton = new Button(this);
         permButton.setText("Dar permissão para abrir apps ao ligar a box");
         permButton.setOnClickListener(new View.OnClickListener() {
