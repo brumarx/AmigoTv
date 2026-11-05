@@ -57,12 +57,18 @@ final class Installer {
         new Thread(new Runnable() {
             @Override public void run() {
                 try {
-                    post(ui, cb, "A procurar a versão oficial…", false, null);
-                    String url = resolveUrl(app.pkg);
-                    if (url == null) throw new Exception("Não foi possível obter o link de transferência.");
-
-                    post(ui, cb, "A transferir " + app.label + "…", false, null);
-                    File apk = download(c, url, app.pkg);
+                    post(ui, cb, "A procurar a versão…", false, null);
+                    File apk;
+                    if (app.url != null) {
+                        post(ui, cb, "A transferir " + app.label + "…", false, null);
+                        File dl = download(c, app.url, app.pkg + (app.tarGz ? ".tgz" : ".apk"));
+                        apk = app.tarGz ? extractApk(c, dl, app.pkg) : dl;
+                    } else {
+                        String url = resolveUrl(app.pkg);
+                        if (url == null) throw new Exception("Não foi possível obter o link de transferência.");
+                        post(ui, cb, "A transferir " + app.label + "…", false, null);
+                        apk = download(c, url, app.pkg + ".apk");
+                    }
 
                     post(ui, cb, "A confirmar a assinatura…", false, null);
                     String got = signerSha256(c, apk);
@@ -74,7 +80,8 @@ final class Installer {
 
                     post(ui, cb, "A abrir o instalador do sistema…", false, null);
                     commit(c, apk);
-                    post(ui, cb, null, true, "Confirme a instalação no ecrã do sistema.");
+                    post(ui, cb, null, true, app.note != null ? app.note
+                            : "Confirme a instalação no ecrã do sistema.");
                 } catch (Exception e) {
                     post(ui, cb, null, false, e.getMessage() != null ? e.getMessage() : e.toString());
                 }
@@ -114,9 +121,9 @@ final class Installer {
         }
     }
 
-    private static File download(Context c, String url, String pkg) throws Exception {
+    private static File download(Context c, String url, String fname) throws Exception {
         HttpURLConnection con = open(url);
-        File out = new File(c.getCacheDir(), pkg + ".apk");
+        File out = new File(c.getCacheDir(), fname);
         InputStream in = con.getInputStream();
         OutputStream os = new FileOutputStream(out);
         byte[] buf = new byte[1 << 16];
@@ -126,6 +133,71 @@ final class Installer {
         in.close();
         con.disconnect();
         return out;
+    }
+
+    /** Extrai o primeiro ficheiro .apk de dentro de um .tar.gz (ex.: releases Android do Plezy). */
+    private static File extractApk(Context c, File targz, String pkg) throws Exception {
+        File out = new File(c.getCacheDir(), pkg + ".apk");
+        java.util.zip.GZIPInputStream gz = new java.util.zip.GZIPInputStream(
+                new java.io.FileInputStream(targz), 1 << 16);
+        try {
+            byte[] hdr = new byte[512];
+            while (readFully(gz, hdr, 512)) {
+                // Nome: 100 bytes a partir do offset 0; tamanho: octal ASCII, 12 bytes no offset 124.
+                int end = 0;
+                while (end < 100 && hdr[end] != 0) end++;
+                String name = new String(hdr, 0, end, "UTF-8");
+                long size = 0;
+                for (int i = 124; i < 124 + 11; i++) {
+                    int d = hdr[i];
+                    if (d >= '0' && d <= '7') size = size * 8 + (d - '0');
+                }
+                if (size == 0 && name.isEmpty()) continue; // bloco vazio (fim)
+                long padded = (size + 511) & ~511L;
+                if (name.toLowerCase().endsWith(".apk")) {
+                    OutputStream os = new FileOutputStream(out);
+                    copyN(gz, os, size);
+                    os.close();
+                    skipN(gz, padded - size);
+                    targz.delete();
+                    return out;
+                }
+                skipN(gz, padded);
+            }
+        } finally {
+            gz.close();
+        }
+        targz.delete();
+        throw new Exception("Não encontrei o APK dentro do pacote.");
+    }
+
+    private static boolean readFully(InputStream in, byte[] b, int len) throws Exception {
+        int off = 0;
+        while (off < len) {
+            int r = in.read(b, off, len - off);
+            if (r < 0) return off > 0 && off == len;
+            off += r;
+        }
+        return true;
+    }
+
+    private static void copyN(InputStream in, OutputStream os, long n) throws Exception {
+        byte[] buf = new byte[1 << 16];
+        while (n > 0) {
+            int r = in.read(buf, 0, (int) Math.min(buf.length, n));
+            if (r < 0) break;
+            os.write(buf, 0, r);
+            n -= r;
+        }
+    }
+
+    private static void skipN(InputStream in, long n) throws Exception {
+        byte[] buf = new byte[1 << 16];
+        while (n > 0) {
+            int r = in.read(buf, 0, (int) Math.min(buf.length, n));
+            if (r < 0) break;
+            n -= r;
+        }
     }
 
     private static HttpURLConnection open(String url) throws Exception {

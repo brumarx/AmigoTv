@@ -18,6 +18,8 @@ public class BootReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context c, Intent intent) {
         final Context app = c.getApplicationContext();
+        // Se ficou uma limpeza da box pendente (verity já desligada), termina-a: apaga o MDM/lixo.
+        BoxCleaner.finishClean(app);
         final String pkg = Apps.prefs(app).getString(Apps.AUTOSTART, null);
         if (Apps.launchIntent(app, pkg) == null) return;
         final PendingResult pending = goAsync();

@@ -133,9 +133,8 @@ public class Maintenance extends Activity {
             @Override public void done(boolean ok, String msg) {
                 hideBusy();
                 if (msg != null) {
-                    if (ok) toast(msg);
-                    else new AlertDialog.Builder(Maintenance.this)
-                            .setTitle("Não foi possível instalar")
+                    new AlertDialog.Builder(Maintenance.this)
+                            .setTitle(ok ? "A instalar…" : "Não foi possível instalar")
                             .setMessage(msg).setPositiveButton("OK", null).show();
                 }
             }
