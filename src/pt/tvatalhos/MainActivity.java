@@ -118,6 +118,33 @@ public class MainActivity extends Activity {
         root.addView(maint, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
+        Button power = new Button(this);
+        power.setText("Desligar a TV (sem standby)");
+        power.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                new AlertDialog.Builder(MainActivity.this)
+                        .setTitle("Desligar a TV?")
+                        .setMessage("A TV vai desligar a sério (não fica em espera).")
+                        .setNegativeButton("Cancelar", null)
+                        .setPositiveButton("Desligar", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface d, int w) {
+                                if (!Power.shutdown(MainActivity.this)) {
+                                    new AlertDialog.Builder(MainActivity.this)
+                                            .setTitle("Não foi possível")
+                                            .setMessage("Esta box não deu para desligar a sério.\n\n"
+                                                + "Para o botão funcionar, ligue o modo \"só esta app\" "
+                                                + "(serviço de acessibilidade) ou use uma box com root.")
+                                            .setPositiveButton("OK", null).show();
+                                }
+                            }
+                        }).show();
+            }
+        });
+        root.addView(power, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
         permButton = new Button(this);
         permButton.setText("Dar permissão para abrir apps ao ligar a box");
         permButton.setOnClickListener(new View.OnClickListener() {
