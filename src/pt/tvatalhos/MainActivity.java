@@ -142,8 +142,11 @@ public class MainActivity extends Activity {
                         }).show();
             }
         });
-        root.addView(power, new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        // Estas boxes não têm "Desligar" no menu de energia (só "Reiniciar"), por isso o botão fica oculto.
+        if (!"MIBOX4".equals(Build.MODEL)) {
+            root.addView(power, new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        }
 
         permButton = new Button(this);
         permButton.setText("Dar permissão para abrir apps ao ligar a box");
